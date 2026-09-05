@@ -1,16 +1,6 @@
 import { useEffect, useState } from 'react'
 import Card from '../components/Card.jsx'
 
-// Hardcoded for now — will come from the backend later.
-// Coordinates are just placeholders; swap in real stop locations whenever.
-const STOPS = [
-  { id: 1, name: 'Main Gate', lat: 25.3202, lng: 55.5136 },
-  { id: 2, name: 'Library', lat: 25.3225, lng: 55.5158 },
-  { id: 3, name: 'Dorm A', lat: 25.3181, lng: 55.5109 },
-  { id: 4, name: 'Sports Complex', lat: 25.3244, lng: 55.5177 },
-  { id: 5, name: 'Engineering Building', lat: 25.3213, lng: 55.5142 },
-]
-
 function haversineDistanceMeters(lat1, lng1, lat2, lng2) {
   const lat1Rad = lat1 * Math.PI / 180
   const lng1Rad = lng1 * Math.PI / 180
@@ -31,8 +21,21 @@ function haversineDistanceMeters(lat1, lng1, lat2, lng2) {
 function NearestStop() {
   const [position, setPosition] = useState(null)
   const [status, setStatus] = useState('loading')
+  const [stops, setStops] = useState([])
+  const [stopsStatus, setStopsStatus] = useState('loading')
 
   useEffect(() => {
+    fetch('http://localhost:8000/api/stops')
+      .then((res) => res.json())
+      .then((data) => {
+        setStops(data)
+        setStopsStatus('ready')
+      })
+      .catch((err) => {
+        console.error(err)
+        setStopsStatus('error')
+      })
+
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         setPosition({
@@ -48,8 +51,15 @@ function NearestStop() {
     )
   }, [])
 
+  const combinedStatus =
+    status === 'error' || stopsStatus === 'error'
+      ? 'error'
+      : status === 'ready' && stopsStatus === 'ready'
+        ? 'ready'
+        : 'loading'
+
   const sortedStops = position
-    ? [...STOPS].map((stop) => ({
+    ? stops.map((stop) => ({
         ...stop,
         distanceM: haversineDistanceMeters(position.lat, position.lng, stop.lat, stop.lng),
       })).sort((a, b) => a.distanceM - b.distanceM)
@@ -62,9 +72,14 @@ function NearestStop() {
         Stops near your current location, closest first.
       </p>
 
-      {status === 'loading' && <p>Finding your location...</p>}
-      {status === 'error' && <p>Location access is needed to find nearby stops.</p>}
-      {status === 'ready' && (
+      {combinedStatus === 'loading' && <p>Finding your location and nearby stops...</p>}
+      {combinedStatus === 'error' && (
+        <p>
+          Couldn't load stops — check your location permission and that the
+          backend is running.
+        </p>
+      )}
+      {combinedStatus === 'ready' && (
         <div className="stop-list">
           {sortedStops.map((stop) => {
             const distanceM = stop.distanceM
