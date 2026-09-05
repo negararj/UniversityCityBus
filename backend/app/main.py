@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from .routers import stops
+from .routers import bus_position, checkin, stops
 
 app = FastAPI(title="University City Bus API")
 
@@ -14,6 +14,8 @@ app.add_middleware(
 )
 
 app.include_router(stops.router, prefix="/api")
+app.include_router(bus_position.router, prefix="/api")
+app.include_router(checkin.router)
 
 
 @app.get("/health")

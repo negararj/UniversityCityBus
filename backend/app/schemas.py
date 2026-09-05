@@ -9,3 +9,11 @@ class StopOut(BaseModel):
     route: str | None = None
 
     model_config = {"from_attributes": True}
+
+
+class BusPositionOut(BaseModel):
+    route: str
+    status: str  # "estimated" | "unknown"
+    lat: float | None
+    lng: float | None
+    rider_count: int
